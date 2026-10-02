@@ -371,3 +371,40 @@ func openAIModelIDSet(models []map[string]any) map[string]struct{} {
 	}
 	return ids
 }
+
+func TestRegisterCodexDaybreakPerAccount(t *testing.T) {
+	reg := internalregistry.GetGlobalRegistry()
+	svc := &Service{cfg: &config.Config{}}
+	for _, tc := range []struct {
+		name     string
+		enabled  bool
+		prefix   string
+		excluded string
+		want     bool
+	}{
+		{name: "approved", enabled: true, want: true},
+		{name: "unapproved"},
+		{name: "prefixed", enabled: true, prefix: "security", want: true},
+		{name: "excluded", enabled: true, excluded: coreauth.CodexDaybreakBlueModelID},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			a := &coreauth.Auth{ID: "daybreak-" + tc.name, Provider: "codex", Prefix: tc.prefix,
+				Metadata:   map[string]any{"auth_kind": "oauth", "daybreak_blue": tc.enabled},
+				Attributes: map[string]string{"plan_type": "pro", "excluded_models": tc.excluded}}
+			t.Cleanup(func() { reg.UnregisterClient(a.ID) })
+			svc.registerModelsForAuth(context.Background(), a)
+			model := coreauth.CodexDaybreakBlueModelID
+			if tc.prefix != "" {
+				model = tc.prefix + "/" + model
+			}
+			if got := reg.ClientSupportsModel(a.ID, model); got != tc.want {
+				t.Fatalf("registered = %v, want %v", got, tc.want)
+			}
+			a.Metadata["daybreak_blue"] = false
+			svc.registerModelsForAuth(context.Background(), a)
+			if reg.ClientSupportsModel(a.ID, model) {
+				t.Fatal("revoked account still supports Daybreak")
+			}
+		})
+	}
+}

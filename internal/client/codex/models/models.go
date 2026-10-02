@@ -543,6 +543,11 @@ func applyCPAWebSearchCapability(entry map[string]any, id string, capabilityForM
 }
 
 func applyCodexClientProviderCapabilities(entry map[string]any, id string, isTemplate bool, providersForModel ProvidersForModelFunc) {
+	if codexClientMetadataModelID(id) == "gpt-daybreak-blue-latest" && (providersForModel == nil || isPureCodexProvider(id, providersForModel)) {
+		// This alias accepts only its matching access program. The fallback
+		// mainline template's standard-only program would mislead Codex clients.
+		entry["available_access_programs"] = map[string]any{"cyber": []string{"daybreak_blue"}}
+	}
 	if !isTemplate {
 		applyCodexClientSearchToolSupport(entry, id, false, providersForModel)
 		return

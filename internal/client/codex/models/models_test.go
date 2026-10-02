@@ -1646,3 +1646,20 @@ func assertCodexNullableFieldCleared(t *testing.T, entry map[string]any, key str
 		t.Errorf("%s = %#v, want null", key, value)
 	}
 }
+
+func TestCodexClientDaybreakAccessProgram(t *testing.T) {
+	for _, id := range []string{"gpt-daybreak-blue-latest", "security/gpt-daybreak-blue-latest"} {
+		resp := BuildResponse([]map[string]any{{"id": id}}, func(string) []string { return []string{"codex"} }, false)
+		models := resp["models"].([]map[string]any)
+		raw, err := json.Marshal(models[0]["available_access_programs"])
+		if err != nil {
+			t.Fatal(err)
+		}
+		if string(raw) != `{"cyber":["daybreak_blue"]}` {
+			t.Fatalf("%s access programs = %s", id, raw)
+		}
+		if models[0]["slug"] != id {
+			t.Fatalf("slug changed: %v", models[0]["slug"])
+		}
+	}
+}

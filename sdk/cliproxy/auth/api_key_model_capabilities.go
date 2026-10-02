@@ -275,7 +275,7 @@ func lookupCodexOAuthModelCapability(auth *Auth, upstreamModel string) (*registr
 		models = registry.GetCodexProModels()
 	}
 	selected := strings.TrimSpace(thinking.ParseSuffix(strings.TrimSpace(upstreamModel)).ModelName)
-	for _, model := range models {
+	for _, model := range ApplyCodexDaybreakModels(auth, models) {
 		if model != nil && strings.EqualFold(model.ID, selected) {
 			return model, true
 		}
